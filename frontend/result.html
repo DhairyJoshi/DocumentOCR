@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results — Document OCR</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body class="results-page">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-4"></div>
+
+    <main class="container glass-panel results-container">
+        <header class="app-header results-header">
+            <div class="header-left">
+                <button id="back-btn" class="icon-btn" title="Back to Upload">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                </button>
+                <div class="doc-info">
+                    <h2 id="result-filename" class="truncate">filename.pdf</h2>
+                    <div class="badges">
+                        <span class="badge" id="result-lang">English</span>
+                        <span class="badge" id="result-pages">1 Page</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <div class="stats">
+                    <span id="result-words">0 words</span>
+                    <span class="dot-sep">·</span>
+                    <span id="result-chars">0 chars</span>
+                </div>
+                <button id="copy-btn" class="secondary-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    Copy
+                </button>
+                <button id="download-btn" class="primary-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download
+                </button>
+            </div>
+        </header>
+
+        <div class="editor-layout">
+            <textarea id="result-text" class="text-editor" readonly placeholder="No text extracted."></textarea>
+        </div>
+    </main>
+
+    <div id="toast" class="toast hidden">Copied to clipboard!</div>
+
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const resultData = sessionStorage.getItem('ocrResult');
+            if (!resultData) {
+                window.location.href = '/';
+                return;
+            }
+
+            try {
+                const data = JSON.parse(resultData);
+
+                document.getElementById('result-filename').textContent = data.filename;
+                document.getElementById('result-lang').textContent = data.language.toUpperCase();
+                document.getElementById('result-pages').textContent = `${data.page_count} Page${data.page_count > 1 ? 's' : ''}`;
+                document.getElementById('result-words').textContent = `${data.word_count.toLocaleString()} words`;
+                document.getElementById('result-chars').textContent = `${data.char_count.toLocaleString()} chars`;
+                document.getElementById('result-text').value = data.text;
+
+                document.getElementById('back-btn').addEventListener('click', () => {
+                    window.location.href = '/';
+                });
+
+                document.getElementById('copy-btn').addEventListener('click', () => {
+                    navigator.clipboard.writeText(data.text).then(() => {
+                        showToast('Copied to clipboard!');
+                    });
+                });
+
+                document.getElementById('download-btn').addEventListener('click', () => {
+                    const blob = new Blob([data.text], { type: 'text/plain' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    const dotIndex = data.filename.lastIndexOf('.');
+                    const nameWithoutExt = dotIndex > 0 ? data.filename.substring(0, dotIndex) : data.filename;
+                    a.download = `${nameWithoutExt}_extracted.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                });
+
+            } catch (e) {
+                console.error("Failed to parse results", e);
+                window.location.href = '/';
+            }
+        });
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.remove('hidden');
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+
+</html>

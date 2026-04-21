@@ -131,19 +131,46 @@ document.addEventListener('DOMContentLoaded', () => {
         errorToast.classList.add('hidden');
     }
 
+    const loadingStatus = document.getElementById('loading-status');
+    const statusText = document.getElementById('status-text');
+    let statusInterval = null;
+
+    const messages = [
+        "Reading document structure...",
+        "Preprocessing images for clarity...",
+        "Running OCR engine...",
+        "Analyzing text layout...",
+        "Cleaning extracted data...",
+        "Almost there..."
+    ];
+
     function setLoading(isLoading) {
         if (isLoading) {
             submitBtn.disabled = true;
             btnText.classList.add('hidden');
             spinner.classList.remove('hidden');
+            loadingStatus.classList.remove('hidden');
             removeBtn.style.pointerEvents = 'none';
             removeBtn.style.opacity = '0.5';
+
+            let msgIndex = 0;
+            statusText.textContent = messages[0];
+            statusInterval = setInterval(() => {
+                msgIndex = (msgIndex + 1) % messages.length;
+                statusText.textContent = messages[msgIndex];
+            }, 3000);
         } else {
             submitBtn.disabled = false;
             btnText.classList.remove('hidden');
             spinner.classList.add('hidden');
+            loadingStatus.classList.add('hidden');
             removeBtn.style.pointerEvents = 'auto';
             removeBtn.style.opacity = '1';
+            
+            if (statusInterval) {
+                clearInterval(statusInterval);
+                statusInterval = null;
+            }
         }
     }
 
